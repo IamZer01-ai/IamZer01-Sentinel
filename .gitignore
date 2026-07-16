@@ -1,0 +1,28 @@
+# Python
+venv/
+__pycache__/
+*.pyc
+
+# Docker
+data/
+*.pid
+
+# Logs
+logs/
+*.log
+nohup.out
+
+# Secrets
+.env
+config/.env
+
+# Grafana
+grafana/data/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
