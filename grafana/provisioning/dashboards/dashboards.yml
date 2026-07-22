@@ -1,0 +1,18 @@
+# ═══════════════════════════════════════════════════════════
+# IamZer01 Sentinel – Grafana Dashboard Provisioning
+# Version 1.0
+# ═══════════════════════════════════════════════════════════
+
+apiVersion: 1
+
+providers:
+  - name: "Sentinel Dashboards"
+    orgId: 1
+    folder: "IamZer01 Sentinel"
+    folderUid: "sentinel"
+    type: file
+    disableDeletion: false
+    editable: true
+    updateIntervalSeconds: 30
+    options:
+      path: /var/lib/grafana/dashboards
