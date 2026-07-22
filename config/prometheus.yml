@@ -1,0 +1,67 @@
+# ═══════════════════════════════════════════════════════════
+# IamZer01 Sentinel – Prometheus Configuration
+# Version 1.0
+# ═══════════════════════════════════════════════════════════
+
+global:
+  scrape_interval:     15s
+  evaluation_interval: 15s
+  scrape_timeout:      10s
+
+  external_labels:
+    monitor: "sentinel-soc"
+    environment: "production"
+
+# ─── Alertmanager ───────────────────────────────────────────
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: ["alertmanager:9093"]
+
+# ─── Rule Files ─────────────────────────────────────────────
+rule_files:
+  - "/etc/prometheus/rules/soc_alerts.yml"
+
+# ─── Scrape Targets ─────────────────────────────────────────
+scrape_configs:
+
+  # Prometheus self-metrics
+  - job_name: "prometheus"
+    static_configs:
+      - targets: ["localhost:9090"]
+
+  # Node Exporter (host metrics)
+  - job_name: "node"
+    scrape_interval: 30s
+    static_configs:
+      - targets: ["node-exporter:9100"]
+
+  # cAdvisor (Docker container metrics)
+  - job_name: "cadvisor"
+    scrape_interval: 30s
+    static_configs:
+      - targets: ["cadvisor:8080"]
+
+  # Firewall Exporter
+  - job_name: "firewall"
+    scrape_interval: 60s
+    static_configs:
+      - targets: ["firewall-exporter:8001"]
+
+  # Vulnerability Exporter
+  - job_name: "vulnerabilities"
+    scrape_interval: 300s
+    static_configs:
+      - targets: ["vuln-exporter:8002"]
+
+  # MITRE ATT&CK Exporter
+  - job_name: "mitre"
+    scrape_interval: 3600s
+    static_configs:
+      - targets: ["mitre-exporter:8003"]
+
+  # Telegraf (InfluxDB metrics also exposed via Prometheus output)
+  - job_name: "telegraf"
+    scrape_interval: 30s
+    static_configs:
+      - targets: ["telegraf:9273"]
