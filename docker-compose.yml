@@ -1,0 +1,245 @@
+version: "3.8"
+
+networks:
+  soc-net:
+    driver: bridge
+
+volumes:
+  prometheus_data:
+  grafana_data:
+  influxdb_data:
+  elasticsearch_data:
+
+services:
+  # ─── PROMETHEUS ────────────────────────────────────────────
+  prometheus:
+    image: prom/prometheus:v2.55.0
+    container_name: sentinel-prometheus
+    hostname: prometheus
+    restart: unless-stopped
+    networks:
+      - soc-net
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./config/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./prometheus/rules:/etc/prometheus/rules:ro
+      - prometheus_data:/prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--storage.tsdb.retention.time=30d"
+      - "--web.console.libraries=/usr/share/prometheus/console_libraries"
+      - "--web.console.templates=/usr/share/prometheus/consoles"
+      - "--web.enable-lifecycle"
+
+  # ─── ALERTMANAGER ──────────────────────────────────────────
+  alertmanager:
+    image: prom/alertmanager:v0.27.0
+    container_name: sentinel-alertmanager
+    hostname: alertmanager
+    restart: unless-stopped
+    networks:
+      - soc-net
+    ports:
+      - "9093:9093"
+    volumes:
+      - ./config/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+    command:
+      - "--config.file=/etc/alertmanager/alertmanager.yml"
+      - "--storage.path=/alertmanager"
+
+  # ─── GRAFANA ───────────────────────────────────────────────
+  grafana:
+    image: grafana/grafana:11.3.0
+    container_name: sentinel-grafana
+    hostname: grafana
+    restart: unless-stopped
+    networks:
+      - soc-net
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-admin}
+      - GF_INSTALL_PLUGINS=grafana-piechart-panel
+      - GF_PATHS_PROVISIONING=/etc/grafana/provisioning
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
+      - ./grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+    depends_on:
+      - prometheus
+      - influxdb
+
+  # ─── INFLUXDB ──────────────────────────────────────────────
+  influxdb:
+    image: influxdb:2.7-alpine
+    container_name: sentinel-influxdb
+    hostname: influxdb
+    restart: unless-stopped
+    networks:
+      - soc-net
+    ports:
+      - "8086:8086"
+    volumes:
+      - influxdb_data:/var/lib/influxdb2
+    environment:
+      - DOCKER_INFLUXDB_INIT_MODE=setup
+      - DOCKER_INFLUXDB_INIT_USERNAME=${INFLUXDB_USER:-admin}
+      - DOCKER_INFLUXDB_INIT_PASSWORD=${INFLUXDB_PASSWORD:-admin123}
+      - DOCKER_INFLUXDB_INIT_ORG=${INFLUXDB_ORG:-sentinel}
+      - DOCKER_INFLUXDB_INIT_BUCKET=${INFLUXDB_BUCKET:-sentinel}
+      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=${INFLUXDB_TOKEN:-sentinel-token}
+
+  # ─── TELEGRAF ──────────────────────────────────────────────
+  telegraf:
+    image: telegraf:1.31-alpine
+    container_name: sentinel-telegraf
+    hostname: telegraf
+    restart: unless-stopped
+    networks:
+      - soc-net
+    volumes:
+      - ./config/telegraf.conf:/etc/telegraf/telegraf.conf:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    depends_on:
+      - influxdb
+    environment:
+      - INFLUXDB_URL=http://influxdb:8086
+      - INFLUXDB_TOKEN=${INFLUXDB_TOKEN:-sentinel-token}
+      - INFLUXDB_ORG=${INFLUXDB_ORG:-sentinel}
+      - INFLUXDB_BUCKET=${INFLUXDB_BUCKET:-sentinel}
+
+  # ─── ELASTICSEARCH ─────────────────────────────────────────
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.15.0
+    container_name: sentinel-elasticsearch
+    hostname: elasticsearch
+    restart: unless-stopped
+    networks:
+      - soc-net
+    ports:
+      - "9200:9200"
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms1g -Xmx1g"
+    mem_limit: 2g
+
+  # ─── KIBANA ────────────────────────────────────────────────
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.15.0
+    container_name: sentinel-kibana
+    hostname: kibana
+    restart: unless-stopped
+    networks:
+      - soc-net
+    ports:
+      - "5601:5601"
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    depends_on:
+      - elasticsearch
+
+  # ─── HOST METRICS (Node Exporter) ──────────────────────────
+  node-exporter:
+    image: prom/node-exporter:v1.8.2
+    container_name: sentinel-node-exporter
+    hostname: node-exporter
+    restart: unless-stopped
+    networks:
+      - soc-net
+    ports:
+      - "9100:9100"
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - "--path.procfs=/host/proc"
+      - "--path.sysfs=/host/sys"
+      - "--path.rootfs=/rootfs"
+      - "--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)"
+
+  # ─── CADVISOR (Container Metrics) ─────────────────────────
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.50.0
+    container_name: sentinel-cadvisor
+    hostname: cadvisor
+    restart: unless-stopped
+    networks:
+      - soc-net
+    ports:
+      - "8080:8080"
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+    privileged: true
+
+  # ─── CUSTOM PYTHON EXPORTERS ──────────────────────────────
+  firewall-exporter:
+    build:
+      context: ./exporters
+      dockerfile: Dockerfile
+    container_name: sentinel-firewall-exporter
+    hostname: firewall-exporter
+    restart: unless-stopped
+    networks:
+      - soc-net
+    ports:
+      - "8001:8001"
+    command: ["python", "firewall_exporter.py"]
+    volumes:
+      - /var/log:/var/log:ro
+
+  vuln-exporter:
+    build:
+      context: ./exporters
+      dockerfile: Dockerfile
+    container_name: sentinel-vuln-exporter
+    hostname: vuln-exporter
+    restart: unless-stopped
+    networks:
+      - soc-net
+    ports:
+      - "8002:8002"
+    command: ["python", "vuln_exporter.py"]
+
+  mitre-exporter:
+    build:
+      context: ./exporters
+      dockerfile: Dockerfile
+    container_name: sentinel-mitre-exporter
+    hostname: mitre-exporter
+    restart: unless-stopped
+    networks:
+      - soc-net
+    ports:
+      - "8003:8003"
+    command: ["python", "mitre_exporter.py"]
+
+  # ─── NGINX REVERSE PROXY ──────────────────────────────────
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: sentinel-nginx
+    hostname: nginx
+    restart: unless-stopped
+    networks:
+      - soc-net
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./logs:/var/log/nginx
+    depends_on:
+      - grafana
+      - kibana
+      - prometheus
