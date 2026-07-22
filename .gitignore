@@ -1,28 +1,51 @@
-# Python
-venv/
-__pycache__/
-*.pyc
+# OS
+.DS_Store
+Thumbs.db
 
-# Docker
-data/
-*.pid
-
-# Logs
-logs/
-*.log
-nohup.out
-
-# Secrets
+# Environment
 .env
 config/.env
 
-# Grafana
-grafana/data/
+# Data
+data/*
+!data/.gitkeep
+
+# Logs
+logs/*
+!logs/.gitkeep
+
+# Backups
+backups/*
+!backups/.gitkeep
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+
+# Docker
+.docker/
 
 # IDE
 .vscode/
 .idea/
+*.swp
+*.swo
 
-# OS
-.DS_Store
-Thumbs.db
+# Grafana
+*_override.yaml
+
+# Telegraf
+telegraf.local.conf
+
+# Caches
+exporters/cve_data.json
+exporters/mitre_cache.json
+
+# Secrets
+**/ssl/
+**/certs/
+*.pem
+*.key
