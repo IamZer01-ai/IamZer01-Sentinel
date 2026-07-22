@@ -1,0 +1,122 @@
+# ═══════════════════════════════════════════════════════════
+# IamZer01 Sentinel – SOC Alert Rules
+# Version 1.0
+# ═══════════════════════════════════════════════════════════
+
+groups:
+  - name: soc_infrastructure
+    interval: 30s
+    rules:
+
+      # ── Host Health ─────────────────────────────────────
+      - alert: HostDown
+        expr: up == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Instance {{ $labels.instance }} is DOWN"
+          description: "{{ $labels.instance }} of job {{ $labels.job }} has been down for more than 2 minutes."
+
+      - alert: HighCPUUsage
+        expr: 100 - (avg(rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 85
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High CPU usage on {{ $labels.instance }}"
+          description: "CPU usage is at {{ $value | humanizePercentage }} — threshold: 85%"
+
+      - alert: HighMemoryUsage
+        expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 90
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High Memory usage on {{ $labels.instance }}"
+          description: "Memory usage is at {{ $value | humanizePercentage }} — threshold: 90%"
+
+      - alert: DiskSpaceLow
+        expr: (node_filesystem_avail_bytes{mountpoint="/",fstype!="tmpfs"} / node_filesystem_size_bytes{mountpoint="/",fstype!="tmpfs"}) * 100 < 10
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Disk space critically low on {{ $labels.instance }}"
+          description: "Disk {{ $labels.mountpoint }} has {{ $value | humanizePercentage }} free — threshold: 10%"
+
+      - alert: DiskSpaceWarning
+        expr: (node_filesystem_avail_bytes{mountpoint="/",fstype!="tmpfs"} / node_filesystem_size_bytes{mountpoint="/",fstype!="tmpfs"}) * 100 < 20
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Disk space low on {{ $labels.instance }}"
+          description: "Disk {{ $labels.mountpoint }} has {{ $value | humanizePercentage }} free — threshold: 20%"
+
+      # ── Docker / Container Health ───────────────────────
+      - alert: ContainerDown
+        expr: time() - container_last_seen > 60
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Container {{ $labels.name }} is unresponsive"
+          description: "Container {{ $labels.name }} (image: {{ $labels.image }}) has not been seen for > 60s"
+
+      - alert: ContainerHighCPU
+        expr: rate(container_cpu_usage_seconds_total{name!=""}[5m]) * 100 > 80
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Container {{ $labels.name }} high CPU"
+          description: "Container {{ $labels.name }} is using {{ $value | humanizePercentage }} CPU"
+
+      # ── Network ─────────────────────────────────────────
+      - alert: NetworkErrors
+        expr: rate(node_network_receive_errors_total[5m]) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Network errors detected on {{ $labels.instance }}"
+          description: "Interface {{ $labels.device }} has {{ $value | humanize }} receive errors/sec"
+
+      # ── Service-Specific ────────────────────────────────
+      - alert: ElasticsearchDown
+        expr: elasticsearch_cluster_health_status != 1
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Elasticsearch cluster health is degraded"
+
+      # ── Firewall Rules ──────────────────────────────────
+      - alert: FirewallRuleBlockedTraffic
+        expr: rate(firewall_blocked_connections_total[5m]) > 100
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High blocked connection rate"
+          description: "Firewall is blocking {{ $value | humanize }} connections/sec"
+
+      # ── Vulnerability ───────────────────────────────────
+      - alert: CriticalVulnerabilityDetected
+        expr: vuln_critical_count > 0
+        for: 0m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Critical vulnerabilities detected"
+          description: "{{ $value }} critical vulnerabilities found on {{ $labels.instance }}"
+
+      - alert: HighVulnerabilityCount
+        expr: vuln_high_count > 10
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High number of vulnerabilities"
+          description: "{{ $value }} high-severity vulnerabilities detected"
