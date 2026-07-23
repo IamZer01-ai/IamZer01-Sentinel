@@ -463,6 +463,267 @@ NestJS Backend API
       ▼
 Next.js Frontend
 
+Here is a complete, production-ready `README.md` for **IamZer01 Sentinel**. You can copy and paste this directly into your GitHub repository.
+
+---
+
+```markdown
+# 🛡️ IamZer01 Sentinel — Personal Security Operations Center (SOC)
+
+[![Docker](https://img.shields.io/badge/Docker-24.0+-0db7ed?style=flat&logo=docker&logoColor=white)](https://www.docker.com/)
+[![Grafana](https://img.shields.io/badge/Grafana-11.3-F46800?style=flat&logo=grafana&logoColor=white)](https://grafana.com/)
+[![Prometheus](https://img.shields.io/badge/Prometheus-2.55-E6522C?style=flat&logo=prometheus&logoColor=white)](https://prometheus.io/)
+[![Elasticsearch](https://img.shields.io/badge/Elasticsearch-8.15-005571?style=flat&logo=elasticsearch&logoColor=white)](https://www.elastic.co/)
+[![Python](https://img.shields.io/badge/Python-3.12-3776AB?style=flat&logo=python&logoColor=white)](https://www.python.org/)
+[![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
+**IamZer01 Sentinel** is a full-stack, lightweight Security Operations Center (SOC) platform designed for real-time security monitoring, threat visibility, system telemetry, and incident response prototyping. Built with containerized microservices, custom threat exporters, and a unified command interface.
+
+---
+
+## 📌 Features
+
+* **Centralized Command Portal (V2):** Dark-themed, high-density interface displaying real-time service health, active alerts, vulnerability posture, and single-click access to all tools.
+* **Infrastructure Telemetry:** Metrics collection via Prometheus, Node Exporter, and cAdvisor (CPU, Memory, Disk, Network, Container stats).
+* **Custom Security Exporters:**
+  * **Firewall Exporter:** Tracks active rules, open ports, connection states, and blocked traffic.
+  * **Vulnerability Exporter:** Ingests NVD feeds to track CVE metrics across Critical, High, Medium, and Low severities.
+  * **MITRE ATT&CK Exporter:** Parses STIX bundles to track coverage across 14 tactics and 500+ techniques.
+* **Log Analytics & SIEM Core:** Elasticsearch + Kibana pipeline for log aggregation and interactive query analysis.
+* **Alerting Engine:** Prometheus rules connected to Alertmanager for real-time notification routing.
+* **Grafana Dashboards:** Pre-provisioned dashboards for SOC Overview, Firewall Analytics, CVE Tracking, and MITRE Mapping.
+
+---
+
+## 🏗️ Architecture Stack
+
+
+```
+
+```
+                           ┌─────────────────────────┐
+                           │     SOC Portal (V2)     │
+                           │   (Flask UI - Port 80)  │
+                           └────────────┬────────────┘
+                                        │
+           ┌────────────────────────────┼────────────────────────────┐
+           │                            │                            │
+  ┌────────┴────────┐          ┌────────┴────────┐          ┌────────┴────────┐
+  │     Grafana     │          │   Prometheus    │          │     Kibana      │
+  │   (Port 3000)   │          │   (Port 9090)   │          │   (Port 5601)   │
+  └────────┬────────┘          └────────┬────────┘          └────────┬────────┘
+           │                            │                            │
+
+```
+
+┌─────────────┴─────────────┐              │              ┌─────────────┴─────────────┐
+│    Provisioned Dashboards │              │              │       Elasticsearch       │
+└───────────────────────────┘              │              └─────────────┬─────────────┘
+│                            │
+┌─────────────────────────────────────┼────────────────────────────┘
+│                                     │
+┌─────┴──────────────────┐      ┌───────────┴────────────┐      ┌─────────────────────────┐
+│   Custom Exporters     │      │   System Collectors    │      │    Time-Series Store    │
+├────────────────────────┤      ├────────────────────────┤      ├─────────────────────────┤
+│ • Firewall Exporter    │      │ • Node Exporter (9100) │      │ • InfluxDB (8086)       │
+│ • Vulnerability Exp.   │      │ • cAdvisor (8080)      │      │ • Telegraf (Agent)      │
+│ • MITRE ATT&CK Exp.    │      │ • Alertmanager (9093)  │      └─────────────────────────┘
+└────────────────────────┘      └────────────────────────┘
+
+```
+
+---
+
+## 📂 Directory Structure
+
+
+```
+
+IamZer01-Sentinel/
+├── config/                  # Configuration files
+│   ├── .env                 # Environment variables & credentials
+│   ├── alertmanager.yml     # Alertmanager routing rules
+│   ├── prometheus.yml       # Prometheus scrape configurations
+│   └── telegraf.conf        # Telegraf system metrics config
+├── scripts/                 # Operational & health check scripts
+│   ├── check_services.sh    # Service container status checker
+│   └── check_endpoints.sh   # Exporter metric validation script
+├── exporters/               # Custom Python Prometheus exporters
+│   ├── firewall/            # Firewall & socket telemetry exporter
+│   ├── vulnerability/       # CVE feed exporter
+│   └── mitre/               # MITRE ATT&CK framework exporter
+├── grafana/                 # Grafana provisioning
+│   ├── dashboards/          # Pre-built JSON dashboard definitions
+│   └── provisioning/        # Auto-loader YAML configurations
+├── portal/                  # SOC Portal UI (Flask / Bootstrap)
+│   ├── app.py               # Main Portal API & backend router
+│   ├── Dockerfile           # Portal container spec
+│   └── templates/           # System Command UI (index.html)
+├── nginx/                   # Reverse proxy configuration
+│   └── nginx.conf           # Unified path routing & security headers
+├── docker-compose.yml       # Primary orchestration stack definition
+└── README.md
+
+```
+
+---
+
+## 🚀 Quick Start Guide
+
+### Prerequisites
+* **Docker Engine** v24.0+ & **Docker Compose** v2.0+
+* Minimum **4 GB RAM** and **2 vCPUs** (GitHub Codespaces or VPS)
+
+---
+
+### Step 1: Clone & Configure
+
+```bash
+# Clone the repository
+git clone [https://github.com/IamZer01-ai/IamZer01-Sentinel.git](https://github.com/IamZer01-ai/IamZer01-Sentinel.git)
+cd IamZer01-Sentinel
+
+# Set executable permissions
+chmod +x scripts/*.sh
+
+# Initialize environment configuration
+cp .env.example config/.env
+
+```
+
+---
+
+### Step 2: System Pre-requisites
+
+Set the host virtual memory limit required for Elasticsearch:
+
+```bash
+sudo sysctl -w vm.max_map_count=262144
+
+# Make setting persistent across reboots
+sudo sh -c 'echo "vm.max_map_count=262144" >> /etc/sysctl.conf'
+
+```
+
+---
+
+### Step 3: Build & Deploy Services
+
+```bash
+# Create required data directory structures
+mkdir -p data/{prometheus,grafana,influxdb,elasticsearch} logs backups
+
+# Pull standard upstream container images
+docker compose pull
+
+# Build custom exporters and the SOC Portal
+docker compose build
+
+# Launch the entire stack in detached mode
+docker compose up -d
+
+```
+
+---
+
+### Step 4: Provision Grafana Dashboards
+
+Copy the dashboard JSON definitions into the active Grafana volume and trigger provisioning:
+
+```bash
+docker compose cp grafana/dashboards/overview.json grafana:/var/lib/grafana/dashboards/
+docker compose cp grafana/dashboards/firewall.json grafana:/var/lib/grafana/dashboards/
+docker compose cp grafana/dashboards/vulnerabilities.json grafana:/var/lib/grafana/dashboards/
+docker compose cp grafana/dashboards/mitre.json grafana:/var/lib/grafana/dashboards/
+
+# Fix permissions and restart Grafana
+docker compose exec grafana chown -R grafana:root /var/lib/grafana/dashboards/
+docker compose restart grafana
+
+```
+
+---
+
+## 🔗 Default Access Ports
+
+| Service | Internal Port | External Route / Port | Default Credentials |
+| --- | --- | --- | --- |
+| **SOC Portal UI** | `5050` | `http://localhost:80` | Public / Unauthenticated |
+| **Grafana** | `3000` | `http://localhost:3000` | `admin` / `admin` |
+| **Prometheus** | `9090` | `http://localhost:9090` | None |
+| **Kibana** | `5601` | `http://localhost:5601` | None |
+| **Alertmanager** | `9093` | `http://localhost:9093` | None |
+| **Elasticsearch** | `9200` | `http://localhost:9200` | None |
+| **InfluxDB** | `8086` | `http://localhost:8086` | `admin` / `admin123` |
+
+---
+
+## 📊 Pre-built Dashboards
+
+1. **SOC Overview (`sentinel-overview`):** Uptime metrics, CPU/Memory gauges, disk trends, active alert tables, and service states.
+2. **Firewall Monitoring (`sentinel-firewall`):** Blocked vs. allowed connection ratios, TCP state breakdowns, open socket counts, and iptables rule tracking.
+3. **Vulnerability Tracking (`sentinel-vuln`):** Critical/High/Medium/Low CVE gauges, vulnerability category breakdown, and historical trends.
+4. **MITRE ATT&CK Matrix (`sentinel-mitre`):** Coverage percentage, tactics tracker, technique count by platform, and interactive tactic mapping.
+
+---
+
+## 🌐 Remote Access via Cloudflare Tunnel (Optional)
+
+To expose your SOC dashboard securely to the internet without opening router ports:
+
+```bash
+# Install cloudflared
+curl -L [https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64](https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64) -o /usr/local/bin/cloudflared
+chmod +x /usr/local/bin/cloudflared
+
+# Authenticate Cloudflare account
+cloudflared tunnel login
+
+# Create tunnel
+cloudflared tunnel create sentinel-soc
+
+# Route domain and start service
+cloudflared tunnel route dns sentinel-soc soc.yourdomain.com
+cloudflared service install
+
+```
+
+---
+
+## 📱 Mobile Access (PWA Integration)
+
+The SOC Portal supports Progressive Web App (PWA) installation:
+
+1. Access the portal URL (`http://your-server-ip`) on Chrome (Android/Desktop) or Safari (iOS).
+2. Tap **Share** or the browser menu **(⋮)**.
+3. Select **"Add to Home Screen"**.
+4. Sentinel will now function as a native, standalone mobile application.
+
+---
+
+## 🛠️ Verification & Diagnostic Commands
+
+```bash
+# Check running container status
+docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+
+# Run automated service health check script
+./scripts/check_services.sh
+
+# Validate custom exporter metrics stream
+./scripts/check_endpoints.sh
+
+```
+
+---
+
+## 📄 License
+
+This project is open-source software licensed under the [MIT License](https://www.google.com/search?q=LICENSE).
+
+```
+
+```
 # SOC-Dashboard
 SOC Dashboard for internal use
 token: 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
