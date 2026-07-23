@@ -1,4 +1,3 @@
-cat > config/alertmanager.yml << 'EOF'
 # ═══════════════════════════════════════════════════════════
 # IamZer01 Sentinel – Alertmanager Configuration
 # Version 1.0
