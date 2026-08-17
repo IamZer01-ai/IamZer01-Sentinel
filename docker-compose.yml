@@ -225,6 +225,32 @@ services:
       - "8003:8003"
     command: ["python", "mitre_exporter.py"]
 
+  # ─── SENTINEL BACKEND API ────────────────────────────────
+  sentinel-backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: sentinel-backend
+    hostname: sentinel-backend
+    restart: unless-stopped
+    networks:
+      - soc-net
+    ports:
+      - "8000:8000"
+    environment:
+      - ELASTICSEARCH_URL=http://elasticsearch:9200
+      - PROMETHEUS_URL=http://prometheus:9090
+      - LOG_LEVEL=INFO
+    depends_on:
+      - elasticsearch
+      - prometheus
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
   # ─── NGINX REVERSE PROXY ──────────────────────────────────
   nginx:
     image: nginx:1.27-alpine
@@ -243,3 +269,4 @@ services:
       - grafana
       - kibana
       - prometheus
+      - sentinel-backend

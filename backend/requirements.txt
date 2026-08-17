@@ -1,0 +1,47 @@
+# Core dependencies
+fastapi==0.104.1
+uvicorn==0.24.0
+pydantic==2.5.0
+pydantic-settings==2.1.0
+
+# Prometheus and time-series
+prometheus-client==0.19.0
+influxdb-client==1.18.0
+
+# Elasticsearch
+elasticsearch==8.11.0
+
+# Data and processing
+python-dateutil==2.8.2
+pytz==2023.3
+requests==2.31.0
+
+# Database
+sqlalchemy==2.0.23
+psycopg2-binary==2.9.9
+
+# Async
+aiohttp==3.9.1
+
+# CLI
+click==8.1.7
+typer==0.9.0
+rich==13.7.0
+
+# Logging and observability
+python-json-logger==2.0.7
+
+# Utils
+python-dotenv==1.0.0
+pyaml==23.12.0
+uuid6==2025.0.0
+
+# Testing
+pytest==7.4.3
+pytest-asyncio==0.21.1
+pytest-cov==4.1.0
+
+# Linting
+ruff==0.1.8
+mypy==1.7.1
+black==23.12.0
