@@ -65,3 +65,10 @@ scrape_configs:
     scrape_interval: 30s
     static_configs:
       - targets: ["telegraf:9273"]
+
+  # Sentinel Backend API
+  - job_name: "sentinel-backend"
+    scrape_interval: 30s
+    static_configs:
+      - targets: ["sentinel-backend:8000"]
+    metrics_path: "/metrics"
