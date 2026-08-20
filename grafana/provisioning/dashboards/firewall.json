@@ -1,0 +1,130 @@
+{
+  "title": "Firewall Monitoring",
+  "uid": "sentinel-firewall",
+  "schemaVersion": 39,
+  "version": 1,
+  "tags": ["sentinel", "firewall", "network"],
+  "timezone": "browser",
+  "editable": true,
+  "refresh": "30s",
+  "time": { "from": "now-6h", "to": "now" },
+  "timepicker": {},
+  "panels": [
+    {
+      "id": 1,
+      "title": "Blocked Connections",
+      "type": "stat",
+      "gridPos": { "x": 0, "y": 0, "w": 6, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "expr": "sum(increase(firewall_blocked_connections_total[24h]))", "legendFormat": "Blocked (24h)" }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [ { "value": null, "color": "green" }, { "value": 1000, "color": "orange" }, { "value": 10000, "color": "red" } ] }
+        }
+      }
+    },
+    {
+      "id": 2,
+      "title": "Allowed Connections",
+      "type": "stat",
+      "gridPos": { "x": 6, "y": 0, "w": 6, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "expr": "sum(increase(firewall_allowed_connections_total[24h]))", "legendFormat": "Allowed (24h)" }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [ { "value": null, "color": "green" } ] }
+        }
+      }
+    },
+    {
+      "id": 3,
+      "title": "Active Rules",
+      "type": "stat",
+      "gridPos": { "x": 12, "y": 0, "w": 6, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "expr": "sum(firewall_active_rules)", "legendFormat": "Total Rules" }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [ { "value": null, "color": "green" }, { "value": 50, "color": "orange" }, { "value": 100, "color": "red" } ] }
+        }
+      }
+    },
+    {
+      "id": 4,
+      "title": "Open Ports",
+      "type": "stat",
+      "gridPos": { "x": 18, "y": 0, "w": 6, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "expr": "count(firewall_open_ports)", "legendFormat": "Open Ports" }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [ { "value": null, "color": "green" }, { "value": 20, "color": "orange" }, { "value": 50, "color": "red" } ] }
+        }
+      }
+    },
+    {
+      "id": 5,
+      "title": "Blocked Connections Rate",
+      "type": "timeseries",
+      "gridPos": { "x": 0, "y": 4, "w": 12, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "expr": "rate(firewall_blocked_connections_total[5m])", "legendFormat": "Blocked/s" }
+      ]
+    },
+    {
+      "id": 6,
+      "title": "TCP Connection States",
+      "type": "bargauge",
+      "gridPos": { "x": 12, "y": 4, "w": 12, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "expr": "firewall_connection_states", "legendFormat": "{{state}}" }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [ { "value": null, "color": "green" }, { "value": 100, "color": "orange" }, { "value": 500, "color": "red" } ] }
+        }
+      }
+    },
+    {
+      "id": 7,
+      "title": "Rules by Chain",
+      "type": "bargauge",
+      "gridPos": { "x": 0, "y": 12, "w": 12, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "expr": "firewall_active_rules", "legendFormat": "{{chain}} ({{table}})" }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" }
+        }
+      }
+    },
+    {
+      "id": 8,
+      "title": "Open Ports by Service",
+      "type": "table",
+      "gridPos": { "x": 12, "y": 12, "w": 12, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "expr": "firewall_open_ports", "format": "table", "instant": true }
+      ]
+    }
+  ]
+}
+EOF
