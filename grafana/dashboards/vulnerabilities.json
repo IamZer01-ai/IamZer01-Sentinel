@@ -1,0 +1,65 @@
+{
+  "title": "Vulnerability Monitoring",
+  "uid": "sentinel-vuln",
+  "schemaVersion": 39, "version": 1,
+  "tags": ["sentinel", "vulnerability", "cve"],
+  "timezone": "browser", "editable": true, "refresh": "5m",
+  "time": { "from": "now-24h", "to": "now" },
+  "timepicker": {},
+  "panels": [
+    {
+      "id": 1, "title": "Critical", "type": "stat",
+      "gridPos": { "x": 0, "y": 0, "w": 6, "h": 5 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "expr": "vuln_critical_count", "legendFormat": "Critical" }],
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{"value": null, "color": "green"}, {"value": 1, "color": "red"}] } } }
+    },
+    {
+      "id": 2, "title": "High", "type": "stat",
+      "gridPos": { "x": 6, "y": 0, "w": 6, "h": 5 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "expr": "vuln_high_count", "legendFormat": "High" }],
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{"value": null, "color": "green"}, {"value": 5, "color": "orange"}, {"value": 10, "color": "red"}] } } }
+    },
+    {
+      "id": 3, "title": "Medium", "type": "stat",
+      "gridPos": { "x": 12, "y": 0, "w": 6, "h": 5 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "expr": "vuln_medium_count", "legendFormat": "Medium" }],
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{"value": null, "color": "green"}, {"value": 20, "color": "orange"}, {"value": 50, "color": "red"}] } } }
+    },
+    {
+      "id": 4, "title": "Low", "type": "stat",
+      "gridPos": { "x": 18, "y": 0, "w": 6, "h": 5 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "expr": "vuln_low_count", "legendFormat": "Low" }],
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{"value": null, "color": "green"}, {"value": 50, "color": "orange"}, {"value": 100, "color": "red"}] } } }
+    },
+    {
+      "id": 5, "title": "Severity Breakdown", "type": "piechart",
+      "gridPos": { "x": 0, "y": 5, "w": 12, "h": 10 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "expr": "vuln_critical_count", "legendFormat": "Critical" },
+        { "expr": "vuln_high_count", "legendFormat": "High" },
+        { "expr": "vuln_medium_count", "legendFormat": "Medium" },
+        { "expr": "vuln_low_count", "legendFormat": "Low" }
+      ],
+      "fieldConfig": { "defaults": { "color": { "mode": "palette-classic" } } },
+      "options": { "displayLabels": ["name","value","percent"], "legend": { "displayMode": "table", "placement": "right" }, "pieType": "pie", "reduceOptions": { "values": false, "calcs": ["lastNotNull"], "fields": "" } }
+    },
+    {
+      "id": 6, "title": "Total Vulnerability Trends", "type": "timeseries",
+      "gridPos": { "x": 12, "y": 5, "w": 12, "h": 10 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "expr": "vuln_total_count", "legendFormat": "Total Vulnerabilities" }]
+    },
+    {
+      "id": 7, "title": "By Category", "type": "bargauge",
+      "gridPos": { "x": 0, "y": 15, "w": 24, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "expr": "vuln_by_category", "legendFormat": "{{category}}" }],
+      "fieldConfig": { "defaults": { "color": { "mode": "palette-classic" } } }
+    }
+  ]
+}

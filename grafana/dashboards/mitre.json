@@ -1,0 +1,61 @@
+{
+  "title": "MITRE ATT&CK Framework",
+  "uid": "sentinel-mitre",
+  "schemaVersion": 39, "version": 1,
+  "tags": ["sentinel", "mitre", "threat-intel"],
+  "timezone": "browser", "editable": true, "refresh": "1h",
+  "time": { "from": "now-24h", "to": "now" },
+  "timepicker": {},
+  "panels": [
+    {
+      "id": 1, "title": "Total Techniques", "type": "stat",
+      "gridPos": { "x": 0, "y": 0, "w": 6, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "expr": "mitre_total_techniques", "legendFormat": "Techniques" }],
+      "fieldConfig": { "defaults": { "color": { "mode": "none" } } }
+    },
+    {
+      "id": 2, "title": "Total Tactics", "type": "stat",
+      "gridPos": { "x": 6, "y": 0, "w": 6, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "expr": "mitre_total_tactics", "legendFormat": "Tactics" }],
+      "fieldConfig": { "defaults": { "color": { "mode": "none" } } }
+    },
+    {
+      "id": 3, "title": "Detection Coverage", "type": "gauge",
+      "gridPos": { "x": 12, "y": 0, "w": 6, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "expr": "mitre_coverage_score", "legendFormat": "Coverage" }],
+      "fieldConfig": { "defaults": { "unit": "percent", "min": 0, "max": 100, "thresholds": { "mode": "absolute", "steps": [{"value": null, "color": "red"}, {"value": 25, "color": "orange"}, {"value": 50, "color": "yellow"}, {"value": 75, "color": "green"}] } } }
+    },
+    {
+      "id": 4, "title": "Platforms Covered", "type": "stat",
+      "gridPos": { "x": 18, "y": 0, "w": 6, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "expr": "count(mitre_platform_techniques)", "legendFormat": "Platforms" }],
+      "fieldConfig": { "defaults": { "color": { "mode": "none" } } }
+    },
+    {
+      "id": 5, "title": "Techniques by Tactic", "type": "bargauge",
+      "gridPos": { "x": 0, "y": 4, "w": 24, "h": 12 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "expr": "mitre_tactic_techniques", "legendFormat": "{{tactic}}" }],
+      "fieldConfig": { "defaults": { "color": { "mode": "palette-classic" } } }
+    },
+    {
+      "id": 6, "title": "By Platform", "type": "piechart",
+      "gridPos": { "x": 0, "y": 16, "w": 12, "h": 10 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "expr": "mitre_platform_techniques", "legendFormat": "{{platform}}" }],
+      "fieldConfig": { "defaults": { "color": { "mode": "palette-classic" } } },
+      "options": { "displayLabels": ["name","value"], "legend": { "displayMode": "table", "placement": "right" }, "pieType": "pie", "reduceOptions": { "values": false, "calcs": ["lastNotNull"], "fields": "" } }
+    },
+    {
+      "id": 7, "title": "Tactic Matrix", "type": "table",
+      "gridPos": { "x": 12, "y": 16, "w": 12, "h": 10 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "expr": "mitre_tactic_techniques", "format": "table", "instant": true }],
+      "transformations": [{ "id": "organize", "options": { "excludeByName": { "Time": true, "__name__": true, "instance": true, "job": true }, "indexByName": {}, "renameByName": { "tactic": "Tactic", "tactic_id": "ID", "Value": "Techniques" } } }]
+    }
+  ]
+}
