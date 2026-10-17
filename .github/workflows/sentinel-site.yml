@@ -68,7 +68,10 @@ jobs:
       - name: Upload frontend artifact
         uses: actions/upload-pages-artifact@v3
         with:
+          name: sentinel-pages-${{ github.run_id }}-${{ github.run_attempt }}
           path: frontend
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+        with:
+          artifact_name: sentinel-pages-${{ github.run_id }}-${{ github.run_attempt }}
