@@ -1,26 +1,40 @@
-# Sentinel SOC console preview
+# Sentinel frontend
 
-This directory contains the first responsive console scaffold for the v2 redesign.
+Static SOC console for the IamZer01 Sentinel project.
 
-## Preview locally
+## Preview and deployment status
 
-Open `index.html` in a browser, or serve the repository root with any static HTTP server and visit `/frontend/`.
+The GitHub Pages site is a public **demo frontend**. It uses labelled sample fixtures by default; it does not claim to receive live Wazuh, Prometheus, or Elasticsearch telemetry.
 
-## Current capabilities
+## Configure a backend API
 
-- Responsive SOC overview layout for desktop and mobile.
-- Clearly labelled demo mode and unverified source health.
-- Client-side search and severity filtering for sample alerts.
-- Local JSON export of the sample snapshot.
-- Navigation placeholders for future incident, asset and investigation modules.
+Edit `config.js` and set `apiBase` to the base URL of a separately hosted Sentinel API, for example:
 
-## Important limitations
+```js
+window.SENTINEL_CONFIG = {
+  apiBase: "https://your-api-host.example"
+};
+```
 
-This preview is not connected to FastAPI or live Wazuh, Prometheus, or Elasticsearch telemetry. Alert records are static demo fixtures. Do not use it as an operational security monitoring system or expose sensitive production information through it.
+The console will request `/api/v1/alerts?hours=24&limit=100` from that origin. The API must permit CORS requests from the exact GitHub Pages origin.
 
-## Next integration work
+**Do not put API keys, passwords, or other secrets in this file.** It is downloaded by every visitor. Do not point the public dashboard at real security telemetry until the API has authentication, authorization, rate limiting, and appropriately restricted data access. The current backend still needs a security-hardening pass before public exposure.
 
-1. Define and validate normalized event and health response schemas in the FastAPI backend.
-2. Add a same-origin API client and loading, stale-data, unauthorized, and unavailable states.
-3. Connect panels to authenticated backend endpoints; never expose integration credentials in browser code.
-4. Add frontend tests and accessibility checks.
+An empty `apiBase` keeps the console in demo mode and avoids making a misleading same-origin API request to GitHub Pages.
+
+## Local preview
+
+From the repository root:
+
+```bash
+python -m http.server 8088
+```
+
+Open `http://localhost:8088/frontend/`. The frontend remains in demo mode until you set `apiBase` in `config.js`.
+
+## UI behavior
+
+- Search and severity filtering work against the active alert list.
+- JSON snapshot export is available.
+- KPI cards and charts are illustrative and are not automatically derived from the API response.
+- The interface labels API alert data separately from verified upstream telemetry.
