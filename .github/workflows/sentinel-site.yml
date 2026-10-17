@@ -4,11 +4,23 @@ on:
   pull_request:
     paths:
       - "frontend/**"
+      - "backend/**"
+      - "config/prometheus.production.yml"
+      - "grafana/provisioning/datasources/production-datasources.yml"
+      - "docker-compose.production.yml"
+      - ".env.production.example"
+      - "docs/PRODUCTION_DEPLOYMENT.md"
       - ".github/workflows/sentinel-site.yml"
   push:
     branches: [main]
     paths:
       - "frontend/**"
+      - "backend/**"
+      - "config/prometheus.production.yml"
+      - "grafana/provisioning/datasources/production-datasources.yml"
+      - "docker-compose.production.yml"
+      - ".env.production.example"
+      - "docs/PRODUCTION_DEPLOYMENT.md"
       - ".github/workflows/sentinel-site.yml"
   workflow_dispatch:
 
@@ -35,6 +47,17 @@ jobs:
           test -s frontend/app.js
           test -s frontend/config.js
           test -s frontend/README.md
+          test -s docker-compose.production.yml
+          test -s .env.production.example
+          test -s docs/PRODUCTION_DEPLOYMENT.md
+      - name: Check Python syntax
+        run: python -m compileall -q backend/sentinel
+      - name: Verify production services are not publicly published
+        run: |
+          grep -q '127.0.0.1:8000:8000' docker-compose.production.yml
+          grep -q '127.0.0.1:3000:3000' docker-compose.production.yml
+          grep -q 'xpack.security.enabled' docker-compose.production.yml
+          ! grep -Eq '^[[:space:]]*-[[:space:]]*"(9090|9200|8086|5601|9093|9100|8080):' docker-compose.production.yml
       - name: Verify demo/live-data safety labels
         run: |
           grep -q "DEMO DATA" frontend/index.html
