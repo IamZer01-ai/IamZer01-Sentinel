@@ -4,6 +4,7 @@ Stores and queries security events, alerts, and incidents.
 """
 
 from datetime import datetime, timedelta
+import os
 from typing import List, Dict, Any, Optional
 from elasticsearch import Elasticsearch
 from sentinel.core.models import SecurityEvent, Alert, Incident
@@ -16,9 +17,19 @@ class ElasticsearchBackend:
     def __init__(self, hosts: List[str] = None):
         """Initialize Elasticsearch client."""
         if hosts is None:
-            hosts = ["http://elasticsearch:9200"]
-        
-        self.client = Elasticsearch(hosts)
+            hosts = [os.getenv("ELASTICSEARCH_URL", "http://elasticsearch:9200")]
+
+        username = os.getenv("ELASTICSEARCH_USERNAME")
+        password = os.getenv("ELASTICSEARCH_PASSWORD")
+        client_options = {
+            "request_timeout": 10,
+            "max_retries": 3,
+            "retry_on_timeout": True,
+        }
+        if username and password:
+            client_options["basic_auth"] = (username, password)
+
+        self.client = Elasticsearch(hosts, **client_options)
         self.events_index = "sentinel-events"
         self.alerts_index = "sentinel-alerts"
         self.incidents_index = "sentinel-incidents"
