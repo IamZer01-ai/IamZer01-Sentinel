@@ -9,6 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from datetime import datetime
 from typing import List, Optional
 import logging
+import os
 
 # Import Sentinel components
 from sentinel.core.models import (
@@ -36,12 +37,20 @@ app = FastAPI(
 )
 
 # CORS configuration
+_cors_origins = [
+    origin.strip()
+    for origin in os.getenv(
+        "SENTINEL_CORS_ORIGINS",
+        "http://localhost:8088,http://127.0.0.1:8088",
+    ).split(",")
+    if origin.strip()
+]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=_cors_origins,
+    allow_credentials=False,
+    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type"],
 )
 
 # Initialize Sentinel components
@@ -66,15 +75,27 @@ logger.info(f"Loaded {len(detection_engine.rules)} detection rules")
 @app.get("/health")
 async def health_check():
     """Health check endpoint."""
+    elasticsearch_healthy = False
+    try:
+        elasticsearch_healthy = bool(es_backend.client.ping())
+    except Exception:
+        logger.exception("Elasticsearch health check failed")
+
+    components = {
+        "detection_engine": "healthy",
+        "correlation_engine": "healthy",
+        "incident_manager": "healthy",
+        "elasticsearch": "healthy" if elasticsearch_healthy else "unavailable",
+    }
+    if not elasticsearch_healthy:
+        raise HTTPException(
+            status_code=503,
+            detail={"status": "degraded", "components": components},
+        )
     return {
         "status": "healthy",
         "timestamp": datetime.utcnow().isoformat(),
-        "components": {
-            "detection_engine": "healthy",
-            "correlation_engine": "healthy",
-            "incident_manager": "healthy",
-            "elasticsearch": "healthy",
-        }
+        "components": components,
     }
 
 
