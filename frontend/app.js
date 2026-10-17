@@ -1,5 +1,5 @@
 (() => {
-  const alerts = [
+  const demoAlerts = [
     {severity:'Critical',name:'Repeated authentication failures',detail:'Possible password spraying pattern',asset:'DEMO-AD-01',time:'14:21:08',confidence:92,status:'Investigating'},
     {severity:'High',name:'Suspicious outbound connection',detail:'Destination requires analyst validation',asset:'DEMO-WKS-14',time:'14:16:42',confidence:84,status:'Open'},
     {severity:'High',name:'Unusual PowerShell activity',detail:'Encoded command pattern matched',asset:'DEMO-ENDP-07',time:'14:02:19',confidence:81,status:'Needs review'},
@@ -12,55 +12,141 @@
   const filter = $('severity-filter');
   const toast = $('toast');
   let toastTimer;
+  let alertData = demoAlerts;
+  let dataMode = 'DEMO';
   const notify = (message) => {
     toast.textContent = message;
     toast.classList.add('show');
     clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => toast.classList.remove('show'), 3000);
+    toastTimer = window.setTimeout(() => toast.classList.remove('show'), 3000);
+  };
+  const text = (tag, className, value) => {
+    const el = document.createElement(tag);
+    if (className) el.className = className;
+    el.textContent = value == null || value === '' ? 'Unknown' : String(value);
+    return el;
   };
   function renderAlerts() {
     const query = (search?.value || '').trim().toLowerCase();
     const severity = filter?.value || 'all';
-    const filtered = alerts.filter((a) => (severity === 'all' || a.severity === severity) && `${a.name} ${a.detail} ${a.asset} ${a.status}`.toLowerCase().includes(query));
-    rows.innerHTML = '';
+    const filtered = alertData.filter((a) => (severity === 'all' || a.severity.toLowerCase() === severity.toLowerCase()) && `${a.name} ${a.detail} ${a.asset} ${a.status}`.toLowerCase().includes(query));
+    rows.replaceChildren();
     filtered.forEach((a) => {
       const tr = document.createElement('tr');
-      const sevClass = a.severity.toLowerCase();
-      const statusClass = a.status === 'Investigating' ? 'investigating' : a.status === 'Open' ? 'open' : 'review';
-      const cells = [
-        `<span class="severity-label sev-${sevClass}">${a.severity}</span>`,
-        `<span class="detection">${a.name}</span><span class="subtext">${a.detail}</span>`,
-        `${a.asset}<span class="subtext">Sample asset</span>`,
-        a.time,
-        `<span class="confidence">${a.confidence}%</span>`,
-        `<span class="status ${statusClass}">${a.status}</span>`
-      ];
-      cells.forEach((html) => { const td = document.createElement('td'); td.innerHTML = html; tr.appendChild(td); });
+      const sev = text('span', `severity-label sev-${a.severity.toLowerCase()}`, a.severity);
+      const title = text('span', 'detection', a.name);
+      const detail = text('span', 'subtext', a.detail);
+      const detection = document.createElement('td'); detection.append(title, detail);
+      const asset = document.createElement('td'); asset.append(text('span', '', a.asset), text('span', 'subtext', a.source || (dataMode === 'DEMO' ? 'Sample asset' : 'API event')));
+      const statusClass = /investigat/i.test(a.status) ? 'investigating' : /^open$/i.test(a.status) || /^new$/i.test(a.status) ? 'open' : 'review';
+      const cells = [document.createElement('td'), detection, asset, text('td', '', a.time), document.createElement('td'), document.createElement('td')];
+      cells[0].append(sev);
+      cells[4].append(text('span', 'confidence', a.confidence == null ? 'Unknown' : `${a.confidence}%`));
+      cells[5].append(text('span', `status ${statusClass}`, a.status));
+      cells.forEach((td) => tr.appendChild(td));
       rows.appendChild(tr);
     });
-    $('result-count').textContent = `Showing ${filtered.length} of ${alerts.length} sample alerts`;
-    if (!filtered.length) { const tr = document.createElement('tr'); const td = document.createElement('td'); td.colSpan = 6; td.textContent = 'No sample alerts match your filters.'; td.style.textAlign = 'center'; td.style.padding = '24px'; tr.appendChild(td); rows.appendChild(tr); }
+    $('result-count').textContent = dataMode === 'DEMO'
+      ? `Showing ${filtered.length} of ${alertData.length} sample alerts`
+      : `Showing ${filtered.length} of ${alertData.length} API alerts`;
+    if (!filtered.length) {
+      const tr = document.createElement('tr');
+      const td = text('td', '', 'No alerts match your filters.');
+      td.colSpan = 6; td.style.textAlign = 'center'; td.style.padding = '24px';
+      tr.appendChild(td); rows.appendChild(tr);
+    }
   }
-  function updateClock() { const now = new Date(); $('clock').textContent = now.toLocaleTimeString([], {hour12:false}); }
-  updateClock(); window.setInterval(updateClock, 1000);
+  function updateClock() {
+    $('clock').textContent = new Date().toLocaleTimeString([], {hour12:false});
+  }
+  function setMode(mode, message) {
+    dataMode = mode;
+    const pill = document.querySelector('.demo-pill');
+    if (pill) {
+      pill.textContent = mode === 'DEMO' ? '● DEMO DATA' : '● API DATA';
+      pill.classList.toggle('api-pill', mode === 'API');
+    }
+    const notice = document.querySelector('.notice');
+    if (notice) {
+      const heading = notice.querySelector('b');
+      const paragraph = notice.querySelector('p');
+      if (mode === 'API') {
+        if (heading) heading.textContent = 'Backend API connected — alert queue uses API responses';
+        if (paragraph) paragraph.textContent = 'The KPI cards and charts remain illustrative. A successful API response does not prove Wazuh or other upstream telemetry is connected.';
+        notice.classList.add('api-notice');
+        notice.querySelector('span')?.remove();
+      } else {
+        if (heading) heading.textContent = 'Preview environment — sample events only';
+        if (paragraph) paragraph.textContent = 'Metrics below are illustrative fixtures. No live Wazuh, Prometheus, or Elasticsearch connection has been verified.';
+        notice.classList.remove('api-notice');
+        if (!notice.querySelector('span')) notice.append(text('span', '', 'NOT LIVE'));
+      }
+    }
+    if (message) notify(message);
+  }
+  function normalizeAlert(item) {
+    const severityRaw = String(item.severity || 'medium').toLowerCase();
+    const severity = ['critical','high','medium','low'].includes(severityRaw) ? severityRaw[0].toUpperCase() + severityRaw.slice(1) : 'Medium';
+    const stamp = item.timestamp || item.created_at || item.time;
+    const parsed = stamp ? new Date(stamp) : null;
+    return {
+      severity,
+      name: item.title || item.name || item.rule_name || 'Security alert',
+      detail: item.description || item.message || item.rule_id || 'No description provided by API',
+      asset: item.hostname || item.host || item.source_ip || 'Unknown asset',
+      source: item.source || 'Backend API',
+      time: parsed && !Number.isNaN(parsed.getTime()) ? parsed.toLocaleTimeString([], {hour12:false,timeZone:'UTC'}) : 'Unknown',
+      confidence: item.confidence == null ? null : Math.max(0, Math.min(100, Number(item.confidence))),
+      status: String(item.status || 'New').replaceAll('_',' ').replace(/\b\w/g, c => c.toUpperCase())
+    };
+  }
+  async function loadApiAlerts() {
+    try {
+      const response = await fetch('/api/v1/alerts?hours=24&limit=100', {headers:{Accept:'application/json'}, credentials:'same-origin', cache:'no-store'});
+      if (!response.ok) throw new Error(`API returned HTTP ${response.status}`);
+      const payload = await response.json();
+      if (!Array.isArray(payload.alerts)) throw new Error('Unexpected alerts API response');
+      alertData = payload.alerts.map(normalizeAlert);
+      dataMode = 'API';
+      setMode('API');
+      renderAlerts();
+      return true;
+    } catch (_) {
+      alertData = demoAlerts;
+      setMode('DEMO');
+      renderAlerts();
+      return false;
+    }
+  }
+  updateClock();
+  window.setInterval(updateClock, 1000);
   renderAlerts();
+  loadApiAlerts();
   search?.addEventListener('input', renderAlerts);
   filter?.addEventListener('change', renderAlerts);
-  $('refresh')?.addEventListener('click', () => { updateClock(); renderAlerts(); notify('Demo view refreshed. Live telemetry is not connected.'); });
+  $('refresh')?.addEventListener('click', async () => {
+    updateClock();
+    const connected = await loadApiAlerts();
+    notify(connected ? 'Alert queue refreshed from backend API.' : 'Showing demo alerts; backend API is unavailable at this site origin.');
+  });
   $('export-btn')?.addEventListener('click', () => {
-    const report = {product:'IamZer01 Sentinel',mode:'DEMO',generated_at:new Date().toISOString(),live_telemetry_verified:false,notice:'All records in this snapshot are illustrative sample fixtures.',alerts};
+    const report = {product:'IamZer01 Sentinel',mode:dataMode,generated_at:new Date().toISOString(),live_upstream_telemetry_verified:false,notice:dataMode === 'DEMO' ? 'Illustrative sample fixtures.' : 'Alerts retrieved from the backend API; upstream source health is not asserted.',alerts:alertData};
     const blob = new Blob([JSON.stringify(report, null, 2)], {type:'application/json'});
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a'); a.href = url; a.download = 'sentinel-demo-snapshot.json'; a.click(); URL.revokeObjectURL(url);
-    notify('Demo snapshot exported as JSON.');
+    const a = document.createElement('a'); a.href = url; a.download = 'sentinel-alert-snapshot.json'; a.click();
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+    notify('Alert snapshot exported as JSON.');
   });
   $('menu-toggle')?.addEventListener('click', () => document.querySelector('.sidebar')?.classList.toggle('open'));
   document.querySelectorAll('.nav-link').forEach((link) => link.addEventListener('click', (event) => {
     const target = link.getAttribute('href');
-    if (target && !['#overview','#alerts'].includes(target)) { event.preventDefault(); notify(`${link.textContent.trim()} is planned for a future module.`); }
+    if (target && !['#overview','#alerts'].includes(target)) {
+      event.preventDefault();
+      notify(`${link.textContent.trim()} is a planned module; its workflow is not implemented yet.`);
+    }
     document.querySelectorAll('.nav-link').forEach((item) => item.classList.remove('active'));
     link.classList.add('active');
     document.querySelector('.sidebar')?.classList.remove('open');
   }));
-  $('time-range')?.addEventListener('change', () => notify('This chart currently uses illustrative demo data.')); 
+  $('time-range')?.addEventListener('change', () => notify('The threat activity chart currently uses illustrative demo data.'));
 })();
