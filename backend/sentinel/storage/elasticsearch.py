@@ -5,6 +5,7 @@ Stores and queries security events, alerts, and incidents.
 
 from datetime import datetime, timedelta
 import os
+import os
 from typing import List, Dict, Any, Optional
 from elasticsearch import Elasticsearch
 from sentinel.core.models import SecurityEvent, Alert, Incident
