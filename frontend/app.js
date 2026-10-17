@@ -6,6 +6,7 @@
     {severity:'Medium',name:'Multiple failed logins',detail:'Threshold exceeded in sample window',asset:'DEMO-APP-03',time:'13:58:51',confidence:68,status:'Open'},
     {severity:'Medium',name:'New service creation event',detail:'Validate against approved change window',asset:'DEMO-SRV-02',time:'13:41:05',confidence:63,status:'Needs review'}
   ];
+  const API_BASE = String(window.SENTINEL_CONFIG?.apiBase || '').trim().replace(/\/+$/, '');
   const $ = (id) => document.getElementById(id);
   const rows = $('alert-rows');
   const search = $('alert-search');
@@ -101,8 +102,14 @@
     };
   }
   async function loadApiAlerts() {
+    if (!API_BASE) {
+      alertData = demoAlerts;
+      setMode('DEMO');
+      renderAlerts();
+      return false;
+    }
     try {
-      const response = await fetch('/api/v1/alerts?hours=24&limit=100', {headers:{Accept:'application/json'}, credentials:'same-origin', cache:'no-store'});
+      const response = await fetch(`${API_BASE}/api/v1/alerts?hours=24&limit=100`, {headers:{Accept:'application/json'}, credentials:'omit', mode:'cors', cache:'no-store'});
       if (!response.ok) throw new Error(`API returned HTTP ${response.status}`);
       const payload = await response.json();
       if (!Array.isArray(payload.alerts)) throw new Error('Unexpected alerts API response');
