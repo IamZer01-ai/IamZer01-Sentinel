@@ -33,12 +33,15 @@ jobs:
           test -s frontend/index.html
           test -s frontend/styles.css
           test -s frontend/app.js
+          test -s frontend/config.js
           test -s frontend/README.md
       - name: Verify demo/live-data safety labels
         run: |
           grep -q "DEMO DATA" frontend/index.html
           grep -q "Not connected" frontend/index.html
           grep -q "live_upstream_telemetry_verified:false" frontend/app.js || grep -q "live_upstream_telemetry_verified: false" frontend/app.js
+          grep -q "SENTINEL_CONFIG" frontend/config.js
+          grep -q "API_BASE" frontend/app.js
       - name: Check HTML has required structure
         run: |
           python - <<'PY'
